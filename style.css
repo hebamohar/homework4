@@ -1,0 +1,219 @@
+/*
+Author: Heba Mohar
+File: style.css
+Purpose: MIS 3371 homework 4 style sheet for Superstar Clinic
+*/
+
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background-color: #ffc0cb;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: black;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#header {
+  background-color: #ffb6c1;
+  padding: 25px;
+  border-bottom: 3px solid black;
+  text-align: center;
+}
+
+.header-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  width: 120px;
+  height: auto;
+}
+
+h1 {
+  font-family: Georgia, serif;
+}
+
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;   
+  justify-content: flex-start; 
+  align-items: center;     
+  padding: 40px 20px;
+}
+
+#main h2 {
+  margin-bottom: 30px;
+  text-align: center;
+  font-family: Georgia, serif;
+}
+
+.form-container {
+  background-color: white;
+  width: 95%;
+  max-width: 1100px;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td {
+  padding: 12px 10px;
+  vertical-align: middle;
+  text-align: left;
+}
+
+input,
+textarea,
+select {
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #999;
+  width: 100%;
+  font-size: 14px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 6px;
+}
+
+button,
+input[type="submit"],
+input[type="reset"] {
+  background-color: #ff69b4;
+  color: black;
+  border: none;
+  padding: 10px 18px;
+  margin: 8px 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover,
+input[type="submit"]:hover,
+input[type="reset"]:hover {
+  background-color: #ff1493;
+}
+
+.button-row {
+  text-align: center;
+  padding-top: 20px;
+}
+
+#footer {
+  background-color: #ffb6c1;
+  text-align: center;
+  padding: 25px;
+  border-top: 3px solid black;
+  color: black;
+}
+
+.review-container {
+  background-color: white;
+  width: 95%;
+  max-width: 1100px;
+  margin-top: 30px;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.review-container h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-family: Georgia, serif;
+}
+
+.review-container p {
+  margin: 8px 0;
+}
+
+/* Review button styling */
+input[type="button"] {
+  background-color: #ff69b4;
+  color: black;
+  border: none;
+  padding: 10px 18px;
+  margin: 8px 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+input[type="button"]:hover {
+  background-color: #ff1493;
+}
+
+/* Slider number styling */
+#sliderValue {
+  font-weight: bold;
+  margin-left: 10px;
+  font-size: 16px;
+}
+
+
+
+.error {
+  color: red;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+  min-height: 14px;
+}
+
+
+.invalid {
+  border: 2px solid red !important;
+  background-color: #ffe6e6;
+}
+
+
+.valid {
+  border: 2px solid green !important;
+}
+
+
+td input[type="radio"],
+td input[type="checkbox"] {
+  margin-right: 6px;
+  width: auto;
+}
+
+
+input[type="range"] {
+  width: 60%;
+  vertical-align: middle;
+}
+
+
+td span.error {
+  display: block;
+}

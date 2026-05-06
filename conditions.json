@@ -1,0 +1,7 @@
+[
+  { "name": "cond1", "label": "Diabetes" },
+  { "name": "cond2", "label": "Hypertension" },
+  { "name": "cond3", "label": "Asthma" },
+  { "name": "cond4", "label": "Heart Disease" },
+  { "name": "cond5", "label": "Allergies" }
+]

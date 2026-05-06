@@ -4,8 +4,7 @@
   File: homework4.html
   Date created: 2026-04-25
   Date last edited: 2026-05-05
-  Purpose: adding onto homework3.html and added Fetch API, iFrame, fixed footer,
-           cookie tracking, and localStorage for returning users
+  Purpose: adding onto homework3.html and adding Fetch API, iFrames, content protection, cookie usage, and storage usage 
 -->
 
 <!DOCTYPE html>
@@ -18,7 +17,18 @@
   <link href="style.css" rel="stylesheet" />
 
   <style>
- 
+    #header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      background-color: #ffb6c1;
+      padding: 15px 25px;
+      border-bottom: 3px solid black;
+      text-align: center;
+    }
+
     #footer {
       position: fixed;
       bottom: 0;
@@ -27,39 +37,16 @@
       z-index: 1000;
       background-color: #ffb6c1;
       text-align: center;
-      padding: 25px;
+      padding: 15px;
       border-top: 3px solid black;
       color: black;
     }
 
     body {
-      padding-bottom: 120px;
+      padding-top: 150px;
+      padding-bottom: 100px;
     }
 
-   
-    .iframe-section {
-      width: 95%;
-      max-width: 1100px;
-      margin: 0 auto 30px auto;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-      padding: 20px;
-    }
-    .iframe-section h3 {
-      font-family: Georgia, serif;
-      margin-bottom: 12px;
-      color: #c2185b;
-      text-align: center;
-    }
-    .iframe-section iframe {
-      width: 100%;
-      height: 200px;
-      border: 2px solid #ffb6c1;
-      border-radius: 8px;
-    }
-
-  
     #welcomeBanner {
       width: 95%;
       max-width: 1100px;
@@ -81,6 +68,27 @@
       cursor: pointer;
     }
 
+    .iframe-section {
+      width: 95%;
+      max-width: 1100px;
+      margin: 0 auto 30px auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      padding: 20px;
+      text-align: center;
+    }
+    .iframe-section h3 {
+      font-family: Georgia, serif;
+      color: #c2185b;
+      margin-bottom: 12px;
+    }
+    .iframe-section iframe {
+      width: 100%;
+      height: 210px;
+      border: 2px solid #ffb6c1;
+      border-radius: 8px;
+    }
 
     .remember-row td {
       padding-top: 6px;
@@ -88,7 +96,6 @@
   </style>
 
   <script>
-
     function setCookie(name, value, hours) {
       let expires = "";
       if (hours) {
@@ -114,7 +121,6 @@
       document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
     }
 
-
     const LS_PREFIX = "superstarclinic_";
 
     function lsSave(key, value) {
@@ -131,13 +137,11 @@
         .forEach(k => localStorage.removeItem(k));
     }
 
-   
     function saveField(fieldName) {
       let f = document.forms["patientForm"];
       if (!f || !f[fieldName]) return;
       lsSave(fieldName, f[fieldName].value);
     }
-
 
     function saveRadio(groupName) {
       let f = document.forms["patientForm"];
@@ -148,15 +152,28 @@
       }
     }
 
-
     function saveCheckboxes() {
       let f = document.forms["patientForm"];
       if (!f) return;
       ["cond1","cond2","cond3","cond4","cond5"].forEach(n => {
-        lsSave(n, f[n].checked ? "true" : "false");
+        if (f[n]) lsSave(n, f[n].checked ? "true" : "false");
       });
     }
 
+    function saveAllLocalStorage() {
+      let f = document.forms["patientForm"];
+      if (!f) return;
+      let fields = ["fname","mi","lname","dob","addr1","addr2","city","zip",
+                    "email","phone","userid","symptoms"];
+      fields.forEach(n => { if (f[n]) lsSave(n, f[n].value); });
+      if (f.state) lsSave("state", f.state.value);
+      saveRadio("gender");
+      saveRadio("vaccinated");
+      saveRadio("insurance");
+      saveCheckboxes();
+      let slider = document.querySelector('input[type="range"]');
+      if (slider) lsSave("healthscale", slider.value);
+    }
 
     function restoreFromLocalStorage() {
       let f = document.forms["patientForm"];
@@ -166,20 +183,16 @@
                     "email","phone","userid","symptoms"];
       fields.forEach(name => {
         let val = lsGet(name);
-        if (val !== null) {
-          if (f[name]) f[name].value = val;
-        }
+        if (val !== null && f[name]) f[name].value = val;
       });
 
-
       let st = lsGet("state");
-      if (st) f.state.value = st;
+      if (st && f.state) f.state.value = st;
 
- 
       ["gender","vaccinated","insurance"].forEach(grp => {
         let val = lsGet(grp);
         if (val && f[grp]) {
-          for (let r of f[grp]) { r.checked = (r.value === val); }
+          for (let r of f[grp]) r.checked = (r.value === val);
         }
       });
 
@@ -187,7 +200,6 @@
         let val = lsGet(n);
         if (val !== null && f[n]) f[n].checked = (val === "true");
       });
-
 
       let sliderVal = lsGet("healthscale");
       if (sliderVal !== null) {
@@ -199,6 +211,7 @@
       }
     }
 
+
     function startAsNewUser() {
       deleteCookie("patientFirstName");
       lsClearAll();
@@ -207,6 +220,7 @@
       location.reload();
     }
 
+ 
     function handleRememberMe() {
       let cb = document.getElementById("rememberMe");
       if (!cb.checked) {
@@ -219,21 +233,6 @@
       }
     }
 
-    function saveAllLocalStorage() {
-      let f = document.forms["patientForm"];
-      if (!f) return;
-      let fields = ["fname","mi","lname","dob","addr1","addr2","city","zip",
-                    "email","phone","userid","symptoms"];
-      fields.forEach(n => { if(f[n]) lsSave(n, f[n].value); });
-      if (f.state) lsSave("state", f.state.value);
-      saveRadio("gender");
-      saveRadio("vaccinated");
-      saveRadio("insurance");
-      saveCheckboxes();
-      let slider = document.querySelector('input[type="range"]');
-      if (slider) lsSave("healthscale", slider.value);
-    }
-
     async function loadStates() {
       try {
         let response = await fetch("states.json");
@@ -243,9 +242,7 @@
         let select = document.querySelector("select[name='state']");
         if (!select) return;
 
-
         select.innerHTML = '<option value="">Select</option>';
-
         states.forEach(s => {
           let opt = document.createElement("option");
           opt.value = s.abbr;
@@ -258,7 +255,6 @@
 
       } catch (err) {
         console.error("Fetch states error:", err);
-       
       }
     }
 
@@ -270,8 +266,7 @@
 
         let container = document.getElementById("conditionsContainer");
         if (!container) return;
-
-        container.innerHTML = ""; 
+        container.innerHTML = "";
 
         conditions.forEach(c => {
           let lbl = document.createElement("label");
@@ -302,7 +297,7 @@
       }
     }
 
-
+   
     function displayDate() {
       const today = new Date();
       document.getElementById("date").textContent = today.toDateString();
@@ -311,46 +306,53 @@
     window.addEventListener("DOMContentLoaded", async function () {
       displayDate();
 
- 
       await loadStates();
       await loadConditions();
 
-     
+
       let cookieName = getCookie("patientFirstName");
-      let banner = document.getElementById("welcomeBanner");
+      let banner     = document.getElementById("welcomeBanner");
+      let headerMsg  = document.getElementById("headerWelcome");
 
       if (cookieName) {
-       
+        
+        headerMsg.innerHTML = `Hello, <strong>${cookieName}</strong>!`;
+
+        
         banner.innerHTML = `
           <p style="font-size:17px; margin-bottom:8px;">
-             Welcome back, <strong>${cookieName}</strong>!
+            Welcome back, <strong>${cookieName}</strong>!
           </p>
           <label>
-            <input type="checkbox" id="notMeCheck" onchange="if(this.checked) startAsNewUser();" style="width:auto;margin-right:6px;">
+            <input type="checkbox" id="notMeCheck"
+              style="width:auto; margin-right:6px;"
+              onchange="if(this.checked) startAsNewUser();">
             Not <strong>${cookieName}</strong>? Click here to start as a <strong>New User</strong>.
           </label>
         `;
-    
-        let fnameField = document.forms["patientForm"].fname;
-        if (fnameField && !fnameField.value) fnameField.value = cookieName;
 
-     
+
+        let fnameField = document.forms["patientForm"].fname;
+        if (fnameField) fnameField.value = cookieName;
+
+      
         restoreFromLocalStorage();
 
       } else {
-       
-        banner.innerHTML = `<p style="font-size:17px;">👋 Welcome, New User! Please fill out the form below.</p>`;
+     
+        headerMsg.textContent = "Welcome, New User!";
+        banner.innerHTML = `<p style="font-size:17px;">Welcome, New User! Please fill out the registration form below.</p>`;
       }
     });
 
+   
     function updateSlider(val) {
       document.getElementById("sliderValue").innerText = val;
-      lsSave("healthscale", val);  
+      lsSave("healthscale", val);
     }
 
     function reviewForm() {
       let f = document.forms["patientForm"];
-
       let conditions = "";
       if (f.cond1 && f.cond1.checked) conditions += "Diabetes ";
       if (f.cond2 && f.cond2.checked) conditions += "Hypertension ";
@@ -367,14 +369,12 @@
         <p><b>Conditions:</b> ${conditions}</p>
         <p><b>User ID:</b> ${f.userid.value}</p>
       `;
-
       document.getElementById("reviewSection").innerHTML = output;
     }
 
     function validateForm() {
       let f = document.forms["patientForm"];
-
-      let password = f.password.value;
+      let password        = f.password.value;
       let confirmPassword = f.password2.value;
 
       let passwordPattern = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#%^&*()\-\_\+=\\\/><.,~`])[A-Za-z\d!@#%^&*()\-\_\+=\\\/><.,~`]{8,}$/;
@@ -384,20 +384,20 @@
         return false;
       }
 
-      let user = f.userid.value.toLowerCase();
-      let fname = f.fname.value.toLowerCase();
-      let lname = f.lname.value.toLowerCase();
+      let user      = f.userid.value.toLowerCase();
+      let fname     = f.fname.value.toLowerCase();
+      let lname     = f.lname.value.toLowerCase();
       let passLower = password.toLowerCase();
 
-      if (passLower.includes(user)) { alert("Password cannot contain User ID"); return false; }
-      if (passLower.includes(fname)) { alert("Password cannot contain first name"); return false; }
-      if (passLower.includes(lname)) { alert("Password cannot contain last name"); return false; }
-
-      if (password !== confirmPassword) { alert("Passwords do not match."); return false; }
+      if (passLower.includes(user))     { alert("Password cannot contain User ID");   return false; }
+      if (passLower.includes(fname))    { alert("Password cannot contain first name"); return false; }
+      if (passLower.includes(lname))    { alert("Password cannot contain last name");  return false; }
+      if (password !== confirmPassword) { alert("Passwords do not match.");             return false; }
 
       let userPattern = /^[a-zA-Z][a-zA-Z0-9_]{4,14}$/;
       if (!userPattern.test(f.userid.value)) { alert("Invalid User ID format"); return false; }
 
+    
       let rememberMe = document.getElementById("rememberMe");
       if (rememberMe && rememberMe.checked) {
         setCookie("patientFirstName", f.fname.value.trim(), 48);
@@ -416,11 +416,11 @@
     function validateName(field, id) {
       let v = field.value.trim();
       if (!/^[A-Za-z'-]{1,30}$/.test(v)) {
-        setError(id, "Letters, apostrophes, dashes only (1–30 chars)");
+        setError(id, "Letters, apostrophes, dashes only (1-30 chars)");
         return false;
       }
       clearError(id);
-      saveField(field.name);   
+      saveField(field.name);
       return true;
     }
 
@@ -437,9 +437,9 @@
       let v = field.value;
       if (!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) { setError(id, "Format MM/DD/YYYY"); return false; }
       let [m, d, y] = v.split("/").map(Number);
-      let date = new Date(y, m - 1, d);
+      let date  = new Date(y, m - 1, d);
       let today = new Date();
-      if (date > today) { setError(id, "Cannot be future date"); return false; }
+      if (date > today)                  { setError(id, "Cannot be future date");       return false; }
       if (today.getFullYear() - y > 120) { setError(id, "Must be under 120 years old"); return false; }
       clearError(id);
       saveField(field.name);
@@ -448,9 +448,10 @@
 
     function formatSSN(field) {
       let n = field.value.replace(/\D/g, "").slice(0, 9);
-      if (n.length > 5) field.value = n.replace(/(\d{3})(\d{2})(\d+)/, "$1-$2-$3");
+      if (n.length > 5)      field.value = n.replace(/(\d{3})(\d{2})(\d+)/, "$1-$2-$3");
       else if (n.length > 3) field.value = n.replace(/(\d{3})(\d+)/, "$1-$2");
-      else field.value = n;
+      else                   field.value = n;
+     
     }
 
     function validateSSN(field, id) {
@@ -505,6 +506,7 @@
       <div>
         <h1>Superstar Clinic</h1>
         <p id="date"></p>
+        <p id="headerWelcome" style="font-style:italic; font-size:15px; margin:0;"></p>
       </div>
     </div>
   </div>
@@ -513,8 +515,10 @@
   <div id="main">
     <h2>New Patient Registration Form</h2>
 
+   
     <div id="welcomeBanner">Loading…</div>
 
+  
     <div class="iframe-section">
       <h3>🏥 Clinic Contact &amp; Hours</h3>
       <iframe
@@ -525,6 +529,7 @@
       </iframe>
     </div>
 
+ 
     <div class="form-container">
       <form name="patientForm" action="thankyou.html" onsubmit="return validateForm()">
         <table>
@@ -702,13 +707,14 @@
             </td>
           </tr>
 
+         
           <tr class="remember-row">
             <td colspan="6" style="text-align:left; padding-left:10px;">
               <label style="font-weight:bold; cursor:pointer;">
                 <input type="checkbox" id="rememberMe" checked
                   style="width:auto; margin-right:8px;"
                   onchange="handleRememberMe()">
-                Remember Me (saves your information for your next visit — expires in 48 hours)
+                Remember Me (saves your info for your next visit — expires in 48 hours)
               </label>
             </td>
           </tr>
@@ -722,8 +728,8 @@
           </tr>
 
         </table>
-      </form>
-    </div>
+       </form>
+       </div>
 
     <div id="reviewSection" class="review-container"></div>
 

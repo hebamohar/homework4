@@ -1,1 +1,466 @@
+<!--
+  Program name: homework4.html
+  Author: Heba Mohar
+  File: homework4.html
+  Date created: 2026-04-25
+  Date last edited: 2026-05-02
+  Purpose: adding onto homework3.html 
+-->
 
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Superstar Clinic - Patient Registration</title>
+  <link href="style.css" rel="stylesheet" />
+
+  <script>
+    function displayDate() {
+      const today = new Date();
+      document.getElementById("date").textContent = today.toDateString();
+    }
+
+    function updateSlider(val){
+      document.getElementById("sliderValue").innerText = val;
+    }
+
+    function reviewForm(){
+      let f = document.forms["patientForm"];
+
+      let conditions = "";
+      if(f.cond1.checked) conditions += "Diabetes ";
+      if(f.cond2.checked) conditions += "Hypertension ";
+      if(f.cond3.checked) conditions += "Asthma ";
+      if(f.cond4.checked) conditions += "Heart Disease ";
+      if(f.cond5.checked) conditions += "Allergies ";
+
+      let output = `
+        <p><b>Name:</b> ${f.fname.value} ${f.mi.value} ${f.lname.value}</p>
+        <p><b>DOB:</b> ${f.dob.value}</p>
+        <p><b>Email:</b> ${f.email.value}</p>
+        <p><b>Phone:</b> ${f.phone.value}</p>
+        <p><b>Address:</b> ${f.addr1.value}, ${f.city.value}, ${f.state.value}, ${f.zip.value}</p>
+        <p><b>Conditions:</b> ${conditions}</p>
+        <p><b>User ID:</b> ${f.userid.value}</p>
+      `;
+
+      document.getElementById("reviewSection").innerHTML = output;
+    }
+
+    function validateForm(){
+      let f = document.forms["patientForm"];
+
+      let password = f.password.value;
+      let confirmPassword = f.password2.value;
+
+      let passwordPattern = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#%^&*()\-\_\+=\\\/><.,~`])[A-Za-z\d!@#%^&*()\-\_\+=\\\/><.,~`]{8,}$/;
+
+      if(!passwordPattern.test(password)){
+        alert("Password must be at least 8 characters and include required characters");
+        return false;
+      }
+
+      let user = f.userid.value.toLowerCase();
+      let fname = f.fname.value.toLowerCase();
+      let lname = f.lname.value.toLowerCase();
+      let passLower = password.toLowerCase();
+
+      if(passLower.includes(user)){
+        alert("Password cannot contain User ID");
+        return false;
+      }
+
+      if(passLower.includes(fname)){
+        alert("Password cannot contain first name");
+        return false;
+      }
+
+      if(passLower.includes(lname)){
+        alert("Password cannot contain last name");
+        return false;
+      }
+
+      if(password !== confirmPassword){
+        alert("Passwords do not match.");
+        return false;
+      }
+
+      let userPattern = /^[a-zA-Z][a-zA-Z0-9_]{4,14}$/;
+      if(!userPattern.test(f.userid.value)){
+        alert("Invalid User ID format");
+        return false;
+      }
+
+      return true;
+    }
+
+
+    function setError(id, msg){
+      document.getElementById(id).innerText = msg;
+    }
+
+    function clearError(id){
+      document.getElementById(id).innerText = "";
+    }
+
+    function validateName(field, id){
+      let v = field.value.trim();
+      if(!/^[A-Za-z'-]{1,30}$/.test(v)){
+        setError(id, "Letters, apostrophes, dashes only (1–30 chars)");
+        return false;
+      }
+      clearError(id);
+      return true;
+    }
+
+    function validateMI(field, id){
+      let v = field.value.trim();
+      if(v === ""){
+        clearError(id);
+        return true;
+      }
+      if(!/^[A-Za-z]$/.test(v)){
+        setError(id, "One letter only");
+        return false;
+      }
+      clearError(id);
+      return true;
+    }
+
+    function validateDOB(field, id){
+      let v = field.value;
+      if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
+        setError(id, "Format MM/DD/YYYY");
+        return false;
+      }
+
+      let [m,d,y] = v.split("/").map(Number);
+      let date = new Date(y, m-1, d);
+      let today = new Date();
+
+      if(date > today){
+        setError(id, "Cannot be future date");
+        return false;
+      }
+
+      if(today.getFullYear() - y > 120){
+        setError(id, "Must be under 120 years old");
+        return false;
+      }
+
+      clearError(id);
+      return true;
+    }
+
+    function formatSSN(field){
+      let n = field.value.replace(/\D/g,"").slice(0,9);
+      if(n.length > 5) field.value = n.replace(/(\d{3})(\d{2})(\d+)/, "$1-$2-$3");
+      else if(n.length > 3) field.value = n.replace(/(\d{3})(\d+)/, "$1-$2");
+      else field.value = n;
+    }
+
+    function validateSSN(field, id){
+      if(!/^\d{3}-\d{2}-\d{4}$/.test(field.value)){
+        setError(id, "SSN must be XXX-XX-XXXX");
+        return false;
+      }
+      clearError(id);
+      return true;
+    }
+
+    function validateEmail(field, id){
+      field.value = field.value.toLowerCase();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value)){
+        setError(id, "Invalid email format");
+        return false;
+      }
+      clearError(id);
+      return true;
+    }
+
+    function validateZip(field, id){
+      if(!/^\d{5}$/.test(field.value)){
+        setError(id, "Zip must be 5 digits");
+        return false;
+      }
+      clearError(id);
+      return true;
+    }
+
+    function validateAll(){
+      let f = document.forms["patientForm"];
+      let errors = 0;
+
+      if(!validateName(f.fname,"fnameError")) errors++;
+      if(!validateMI(f.mi,"miError")) errors++;
+      if(!validateName(f.lname,"lnameError")) errors++;
+      if(!validateDOB(f.dob,"dobError")) errors++;
+      if(!validateSSN(f.ssn,"ssnError")) errors++;
+      if(!validateEmail(f.email,"emailError")) errors++;
+      if(!validateZip(f.zip,"zipError")) errors++;
+
+      if(errors === 0){
+        document.getElementById("realSubmit").style.display = "inline";
+        alert("All fields valid. You may now submit.");
+      } else {
+        alert("Please fix all errors first.");
+      }
+    }
+
+  </script>
+</head>
+
+<body onload="displayDate()">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="header-content">
+      <img src="logo.jpg" alt="Superstar Clinic Logo" class="logo" />
+      <div>
+        <h1>Superstar Clinic</h1>
+        <p id="date"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <h2>New Patient Registration Form</h2>
+
+    <div class="form-container">
+      <form name="patientForm" action="thankyou.html" onsubmit="return validateForm()">
+        <table>
+
+          <tr>
+            <td>First Name:</td>
+            <td>
+              <input name="fname" type="text" maxlength="30" required
+                placeholder="John"
+                oninput="validateName(this,'fnameError')"
+                onblur="validateName(this,'fnameError')" />
+              <span id="fnameError" class="error"></span>
+            </td>
+
+            <td>Middle Initial:</td>
+            <td>
+              <input name="mi" type="text" maxlength="1"
+                placeholder="M"
+                oninput="validateMI(this,'miError')"
+                onblur="validateMI(this,'miError')" />
+              <span id="miError" class="error"></span>
+            </td>
+
+            <td>Last Name:</td>
+            <td>
+              <input name="lname" type="text" maxlength="30" required
+                placeholder="Smith"
+                oninput="validateName(this,'lnameError')"
+                onblur="validateName(this,'lnameError')" />
+              <span id="lnameError" class="error"></span>
+            </td>
+          </tr>
+
+          <tr>
+            <td>Date of Birth (MM/DD/YYYY):</td>
+            <td>
+              <input name="dob" type="text" required
+                placeholder="MM/DD/YYYY"
+                onblur="validateDOB(this,'dobError')" />
+              <span id="dobError" class="error"></span>
+            </td>
+
+            <td>Social Security:</td>
+            <td>
+              <input name="ssn" type="password"
+                placeholder="123-45-6789"
+                oninput="formatSSN(this)"
+                onblur="validateSSN(this,'ssnError')" />
+              <span id="ssnError" class="error"></span>
+            </td>
+          </tr>
+
+          <tr>
+            <td>Address Line 1:</td>
+            <td><input name="addr1" type="text" maxlength="30" required placeholder="123 Main St" /></td>
+
+            <td>Address Line 2:</td>
+            <td><input name="addr2" type="text" maxlength="30" placeholder="Apt 4" /></td>
+          </tr>
+
+          <tr>
+            <td>City:</td>
+            <td><input name="city" type="text" maxlength="30" required placeholder="Houston" /></td>
+
+            <td>State:</td>
+            <td>
+              <select name="state" required>
+                <option value="">Select</option>
+                <option value="AL">Alabama</option>
+                <option value="AK">Alaska</option>
+                <option value="AZ">Arizona</option>
+                <option value="AR">Arkansas</option>
+                <option value="CA">California</option>
+                <option value="CO">Colorado</option>
+                <option value="CT">Connecticut</option>
+                <option value="DE">Delaware</option>
+                <option value="DC">District Of Columbia</option>
+                <option value="FL">Florida</option>
+                <option value="GA">Georgia</option>
+                <option value="HI">Hawaii</option>
+                <option value="ID">Idaho</option>
+                <option value="IL">Illinois</option>
+                <option value="IN">Indiana</option>
+                <option value="IA">Iowa</option>
+                <option value="KS">Kansas</option>
+                <option value="KY">Kentucky</option>
+                <option value="LA">Louisiana</option>
+                <option value="ME">Maine</option>
+                <option value="MD">Maryland</option>
+                <option value="MA">Massachusetts</option>
+                <option value="MI">Michigan</option>
+                <option value="MN">Minnesota</option>
+                <option value="MS">Mississippi</option>
+                <option value="MO">Missouri</option>
+                <option value="MT">Montana</option>
+                <option value="NE">Nebraska</option>
+                <option value="NV">Nevada</option>
+                <option value="NH">New Hampshire</option>
+                <option value="NJ">New Jersey</option>
+                <option value="NM">New Mexico</option>
+                <option value="NY">New York</option>
+                <option value="NC">North Carolina</option>
+                <option value="ND">North Dakota</option>
+                <option value="OH">Ohio</option>
+                <option value="OK">Oklahoma</option>
+                <option value="OR">Oregon</option>
+                <option value="PA">Pennsylvania</option>
+                <option value="RI">Rhode Island</option>
+                <option value="SC">South Carolina</option>
+                <option value="SD">South Dakota</option>
+                <option value="TN">Tennessee</option>
+                <option value="TX">Texas</option>
+                <option value="UT">Utah</option>
+                <option value="VT">Vermont</option>
+                <option value="VA">Virginia</option>
+                <option value="WA">Washington</option>
+                <option value="WV">West Virginia</option>
+                <option value="WI">Wisconsin</option>
+                <option value="WY">Wyoming</option>
+              </select>
+            </td>
+
+            <td>Zip Code:</td>
+            <td>
+              <input name="zip" type="text"
+                placeholder="77009"
+                oninput="validateZip(this,'zipError')"
+                onblur="validateZip(this,'zipError')" />
+              <span id="zipError" class="error"></span>
+            </td>
+          </tr>
+
+          <tr>
+            <td>Email Address:</td>
+            <td>
+              <input name="email" type="email"
+                placeholder="name@email.com"
+                oninput="validateEmail(this,'emailError')"
+                onblur="validateEmail(this,'emailError')" />
+              <span id="emailError" class="error"></span>
+            </td>
+
+            <td>Phone Number:</td>
+            <td><input name="phone" type="text" placeholder="713-555-1212" /></td>
+          </tr>
+
+          <tr>
+            <td>User ID:</td>
+            <td><input name="userid" type="text" required placeholder="username123" /></td>
+          </tr>
+
+          <tr>
+            <td>Password:</td>
+            <td><input name="password" type="password" required placeholder="Strong password" /></td>
+
+            <td>Re-enter Password:</td>
+            <td><input name="password2" type="password" required placeholder="Re-enter password" /></td>
+          </tr>
+
+          <tr>
+            <td>Describe Current Symptoms:</td>
+            <td colspan="5">
+              <textarea rows="3" cols="50"></textarea>
+            </td>
+          </tr>
+
+          <tr>
+            <td>Medical Conditions:</td>
+            <td colspan="5">
+              <input type="checkbox" name="cond1"> Diabetes
+              <input type="checkbox" name="cond2"> Hypertension
+              <input type="checkbox" name="cond3"> Asthma
+              <input type="checkbox" name="cond4"> Heart Disease
+              <input type="checkbox" name="cond5"> Allergies
+            </td>
+          </tr>
+
+          <tr>
+            <td>Gender:</td>
+            <td colspan="5">
+              <input type="radio" name="gender" value="Male"> Male
+              <input type="radio" name="gender" value="Female"> Female
+              <input type="radio" name="gender" value="Other"> Other
+            </td>
+          </tr>
+
+          <tr>
+            <td>Vaccinated:</td>
+            <td colspan="5">
+              <input type="radio" name="vaccinated" value="Yes"> Yes
+              <input type="radio" name="vaccinated" value="No"> No
+            </td>
+          </tr>
+
+          <tr>
+            <td>Do You Have Insurance?</td>
+            <td colspan="5">
+              <input type="radio" name="insurance" value="Yes"> Yes
+              <input type="radio" name="insurance" value="No"> No
+            </td>
+          </tr>
+
+          <tr>
+            <td>Health Scale (1-10):</td>
+            <td colspan="5">
+              <input type="range" min="1" max="10" oninput="updateSlider(this.value)" />
+              <span id="sliderValue">5</span>
+            </td>
+          </tr>
+
+          <tr>
+            <td colspan="6" style="text-align:center;">
+              <input type="button" value="VALIDATE" onclick="validateAll()" />
+              <input type="submit" id="realSubmit" value="Submit" />
+            </td>
+          </tr>
+
+        </table>
+      </form>
+    </div>
+
+    <div id="reviewSection" class="review-container"></div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer">
+    <p><strong>Superstar Clinic</strong></p>
+    <p>PO Box 7392</p>
+    <p>Houston, Texas 77009</p>
+    <button onclick="alert('Please call us at 832-791-0124')">Contact Us</button>
+  </div>
+
+</body>
+</html>

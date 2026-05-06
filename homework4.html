@@ -3,8 +3,9 @@
   Author: Heba Mohar
   File: homework4.html
   Date created: 2026-04-25
-  Date last edited: 2026-05-02
-  Purpose: adding onto homework3.html 
+  Date last edited: 2026-05-05
+  Purpose: adding onto homework3.html and added Fetch API, iFrame, fixed footer,
+           cookie tracking, and localStorage for returning users
 -->
 
 <!DOCTYPE html>
@@ -16,25 +17,346 @@
   <title>Superstar Clinic - Patient Registration</title>
   <link href="style.css" rel="stylesheet" />
 
+  <style>
+ 
+    #footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      background-color: #ffb6c1;
+      text-align: center;
+      padding: 25px;
+      border-top: 3px solid black;
+      color: black;
+    }
+
+    body {
+      padding-bottom: 120px;
+    }
+
+   
+    .iframe-section {
+      width: 95%;
+      max-width: 1100px;
+      margin: 0 auto 30px auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    .iframe-section h3 {
+      font-family: Georgia, serif;
+      margin-bottom: 12px;
+      color: #c2185b;
+      text-align: center;
+    }
+    .iframe-section iframe {
+      width: 100%;
+      height: 200px;
+      border: 2px solid #ffb6c1;
+      border-radius: 8px;
+    }
+
+  
+    #welcomeBanner {
+      width: 95%;
+      max-width: 1100px;
+      margin: 0 auto 20px auto;
+      padding: 14px 20px;
+      background: #fff0f5;
+      border: 2px solid #ff69b4;
+      border-radius: 8px;
+      font-family: Georgia, serif;
+      text-align: center;
+    }
+    #welcomeBanner label {
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #welcomeBanner input[type="checkbox"] {
+      width: auto;
+      margin-right: 6px;
+      cursor: pointer;
+    }
+
+
+    .remember-row td {
+      padding-top: 6px;
+    }
+  </style>
+
   <script>
+
+    function setCookie(name, value, hours) {
+      let expires = "";
+      if (hours) {
+        let d = new Date();
+        d.setTime(d.getTime() + hours * 60 * 60 * 1000);
+        expires = "; expires=" + d.toUTCString();
+      }
+      document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+    }
+
+    function getCookie(name) {
+      let nameEQ = name + "=";
+      let ca = document.cookie.split(";");
+      for (let c of ca) {
+        c = c.trim();
+        if (c.indexOf(nameEQ) === 0)
+          return decodeURIComponent(c.substring(nameEQ.length));
+      }
+      return null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+    }
+
+
+    const LS_PREFIX = "superstarclinic_";
+
+    function lsSave(key, value) {
+      localStorage.setItem(LS_PREFIX + key, value);
+    }
+
+    function lsGet(key) {
+      return localStorage.getItem(LS_PREFIX + key);
+    }
+
+    function lsClearAll() {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith(LS_PREFIX))
+        .forEach(k => localStorage.removeItem(k));
+    }
+
+   
+    function saveField(fieldName) {
+      let f = document.forms["patientForm"];
+      if (!f || !f[fieldName]) return;
+      lsSave(fieldName, f[fieldName].value);
+    }
+
+
+    function saveRadio(groupName) {
+      let f = document.forms["patientForm"];
+      if (!f) return;
+      let radios = f[groupName];
+      for (let r of radios) {
+        if (r.checked) { lsSave(groupName, r.value); return; }
+      }
+    }
+
+
+    function saveCheckboxes() {
+      let f = document.forms["patientForm"];
+      if (!f) return;
+      ["cond1","cond2","cond3","cond4","cond5"].forEach(n => {
+        lsSave(n, f[n].checked ? "true" : "false");
+      });
+    }
+
+
+    function restoreFromLocalStorage() {
+      let f = document.forms["patientForm"];
+      if (!f) return;
+
+      let fields = ["fname","mi","lname","dob","addr1","addr2","city","zip",
+                    "email","phone","userid","symptoms"];
+      fields.forEach(name => {
+        let val = lsGet(name);
+        if (val !== null) {
+          if (f[name]) f[name].value = val;
+        }
+      });
+
+
+      let st = lsGet("state");
+      if (st) f.state.value = st;
+
+ 
+      ["gender","vaccinated","insurance"].forEach(grp => {
+        let val = lsGet(grp);
+        if (val && f[grp]) {
+          for (let r of f[grp]) { r.checked = (r.value === val); }
+        }
+      });
+
+      ["cond1","cond2","cond3","cond4","cond5"].forEach(n => {
+        let val = lsGet(n);
+        if (val !== null && f[n]) f[n].checked = (val === "true");
+      });
+
+
+      let sliderVal = lsGet("healthscale");
+      if (sliderVal !== null) {
+        let slider = document.querySelector('input[type="range"]');
+        if (slider) {
+          slider.value = sliderVal;
+          document.getElementById("sliderValue").innerText = sliderVal;
+        }
+      }
+    }
+
+    function startAsNewUser() {
+      deleteCookie("patientFirstName");
+      lsClearAll();
+      document.forms["patientForm"].reset();
+      document.getElementById("sliderValue").innerText = "5";
+      location.reload();
+    }
+
+    function handleRememberMe() {
+      let cb = document.getElementById("rememberMe");
+      if (!cb.checked) {
+        deleteCookie("patientFirstName");
+        lsClearAll();
+      } else {
+        let fname = document.forms["patientForm"].fname.value.trim();
+        if (fname) setCookie("patientFirstName", fname, 48);
+        saveAllLocalStorage();
+      }
+    }
+
+    function saveAllLocalStorage() {
+      let f = document.forms["patientForm"];
+      if (!f) return;
+      let fields = ["fname","mi","lname","dob","addr1","addr2","city","zip",
+                    "email","phone","userid","symptoms"];
+      fields.forEach(n => { if(f[n]) lsSave(n, f[n].value); });
+      if (f.state) lsSave("state", f.state.value);
+      saveRadio("gender");
+      saveRadio("vaccinated");
+      saveRadio("insurance");
+      saveCheckboxes();
+      let slider = document.querySelector('input[type="range"]');
+      if (slider) lsSave("healthscale", slider.value);
+    }
+
+    async function loadStates() {
+      try {
+        let response = await fetch("states.json");
+        if (!response.ok) throw new Error("Could not load states.json");
+        let states = await response.json();
+
+        let select = document.querySelector("select[name='state']");
+        if (!select) return;
+
+
+        select.innerHTML = '<option value="">Select</option>';
+
+        states.forEach(s => {
+          let opt = document.createElement("option");
+          opt.value = s.abbr;
+          opt.textContent = s.name;
+          select.appendChild(opt);
+        });
+
+        let savedState = lsGet("state");
+        if (savedState) select.value = savedState;
+
+      } catch (err) {
+        console.error("Fetch states error:", err);
+       
+      }
+    }
+
+    async function loadConditions() {
+      try {
+        let response = await fetch("conditions.json");
+        if (!response.ok) throw new Error("Could not load conditions.json");
+        let conditions = await response.json();
+
+        let container = document.getElementById("conditionsContainer");
+        if (!container) return;
+
+        container.innerHTML = ""; 
+
+        conditions.forEach(c => {
+          let lbl = document.createElement("label");
+          lbl.style.marginRight = "14px";
+
+          let cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.name = c.name;
+          cb.style.width = "auto";
+          cb.style.marginRight = "4px";
+          if (lsGet(c.name) === "true") cb.checked = true;
+          cb.addEventListener("change", saveCheckboxes);
+
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(" " + c.label));
+          container.appendChild(lbl);
+        });
+
+      } catch (err) {
+        console.error("Fetch conditions error:", err);
+        document.getElementById("conditionsContainer").innerHTML = `
+          <label><input type="checkbox" name="cond1" style="width:auto;margin-right:4px;"> Diabetes</label>
+          <label><input type="checkbox" name="cond2" style="width:auto;margin-right:4px;"> Hypertension</label>
+          <label><input type="checkbox" name="cond3" style="width:auto;margin-right:4px;"> Asthma</label>
+          <label><input type="checkbox" name="cond4" style="width:auto;margin-right:4px;"> Heart Disease</label>
+          <label><input type="checkbox" name="cond5" style="width:auto;margin-right:4px;"> Allergies</label>
+        `;
+      }
+    }
+
+
     function displayDate() {
       const today = new Date();
       document.getElementById("date").textContent = today.toDateString();
     }
 
-    function updateSlider(val){
+    window.addEventListener("DOMContentLoaded", async function () {
+      displayDate();
+
+ 
+      await loadStates();
+      await loadConditions();
+
+     
+      let cookieName = getCookie("patientFirstName");
+      let banner = document.getElementById("welcomeBanner");
+
+      if (cookieName) {
+       
+        banner.innerHTML = `
+          <p style="font-size:17px; margin-bottom:8px;">
+            👋 Welcome back, <strong>${cookieName}</strong>!
+          </p>
+          <label>
+            <input type="checkbox" id="notMeCheck" onchange="if(this.checked) startAsNewUser();" style="width:auto;margin-right:6px;">
+            Not <strong>${cookieName}</strong>? Click here to start as a <strong>New User</strong>.
+          </label>
+        `;
+    
+        let fnameField = document.forms["patientForm"].fname;
+        if (fnameField && !fnameField.value) fnameField.value = cookieName;
+
+     
+        restoreFromLocalStorage();
+
+      } else {
+       
+        banner.innerHTML = `<p style="font-size:17px;">👋 Welcome, New User! Please fill out the form below.</p>`;
+      }
+    });
+
+    function updateSlider(val) {
       document.getElementById("sliderValue").innerText = val;
+      lsSave("healthscale", val);  
     }
 
-    function reviewForm(){
+    function reviewForm() {
       let f = document.forms["patientForm"];
 
       let conditions = "";
-      if(f.cond1.checked) conditions += "Diabetes ";
-      if(f.cond2.checked) conditions += "Hypertension ";
-      if(f.cond3.checked) conditions += "Asthma ";
-      if(f.cond4.checked) conditions += "Heart Disease ";
-      if(f.cond5.checked) conditions += "Allergies ";
+      if (f.cond1 && f.cond1.checked) conditions += "Diabetes ";
+      if (f.cond2 && f.cond2.checked) conditions += "Hypertension ";
+      if (f.cond3 && f.cond3.checked) conditions += "Asthma ";
+      if (f.cond4 && f.cond4.checked) conditions += "Heart Disease ";
+      if (f.cond5 && f.cond5.checked) conditions += "Allergies ";
 
       let output = `
         <p><b>Name:</b> ${f.fname.value} ${f.mi.value} ${f.lname.value}</p>
@@ -49,7 +371,7 @@
       document.getElementById("reviewSection").innerHTML = output;
     }
 
-    function validateForm(){
+    function validateForm() {
       let f = document.forms["patientForm"];
 
       let password = f.password.value;
@@ -57,7 +379,7 @@
 
       let passwordPattern = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#%^&*()\-\_\+=\\\/><.,~`])[A-Za-z\d!@#%^&*()\-\_\+=\\\/><.,~`]{8,}$/;
 
-      if(!passwordPattern.test(password)){
+      if (!passwordPattern.test(password)) {
         alert("Password must be at least 8 characters and include required characters");
         return false;
       }
@@ -67,152 +389,114 @@
       let lname = f.lname.value.toLowerCase();
       let passLower = password.toLowerCase();
 
-      if(passLower.includes(user)){
-        alert("Password cannot contain User ID");
-        return false;
-      }
+      if (passLower.includes(user)) { alert("Password cannot contain User ID"); return false; }
+      if (passLower.includes(fname)) { alert("Password cannot contain first name"); return false; }
+      if (passLower.includes(lname)) { alert("Password cannot contain last name"); return false; }
 
-      if(passLower.includes(fname)){
-        alert("Password cannot contain first name");
-        return false;
-      }
-
-      if(passLower.includes(lname)){
-        alert("Password cannot contain last name");
-        return false;
-      }
-
-      if(password !== confirmPassword){
-        alert("Passwords do not match.");
-        return false;
-      }
+      if (password !== confirmPassword) { alert("Passwords do not match."); return false; }
 
       let userPattern = /^[a-zA-Z][a-zA-Z0-9_]{4,14}$/;
-      if(!userPattern.test(f.userid.value)){
-        alert("Invalid User ID format");
-        return false;
+      if (!userPattern.test(f.userid.value)) { alert("Invalid User ID format"); return false; }
+
+      let rememberMe = document.getElementById("rememberMe");
+      if (rememberMe && rememberMe.checked) {
+        setCookie("patientFirstName", f.fname.value.trim(), 48);
+        saveAllLocalStorage();
+      } else {
+        deleteCookie("patientFirstName");
+        lsClearAll();
       }
 
       return true;
     }
 
+    function setError(id, msg) { document.getElementById(id).innerText = msg; }
+    function clearError(id)    { document.getElementById(id).innerText = ""; }
 
-    function setError(id, msg){
-      document.getElementById(id).innerText = msg;
-    }
-
-    function clearError(id){
-      document.getElementById(id).innerText = "";
-    }
-
-    function validateName(field, id){
+    function validateName(field, id) {
       let v = field.value.trim();
-      if(!/^[A-Za-z'-]{1,30}$/.test(v)){
+      if (!/^[A-Za-z'-]{1,30}$/.test(v)) {
         setError(id, "Letters, apostrophes, dashes only (1–30 chars)");
         return false;
       }
       clearError(id);
+      saveField(field.name);   
       return true;
     }
 
-    function validateMI(field, id){
+    function validateMI(field, id) {
       let v = field.value.trim();
-      if(v === ""){
-        clearError(id);
-        return true;
-      }
-      if(!/^[A-Za-z]$/.test(v)){
-        setError(id, "One letter only");
-        return false;
-      }
+      if (v === "") { clearError(id); saveField(field.name); return true; }
+      if (!/^[A-Za-z]$/.test(v)) { setError(id, "One letter only"); return false; }
       clearError(id);
+      saveField(field.name);
       return true;
     }
 
-    function validateDOB(field, id){
+    function validateDOB(field, id) {
       let v = field.value;
-      if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v)){
-        setError(id, "Format MM/DD/YYYY");
-        return false;
-      }
-
-      let [m,d,y] = v.split("/").map(Number);
-      let date = new Date(y, m-1, d);
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) { setError(id, "Format MM/DD/YYYY"); return false; }
+      let [m, d, y] = v.split("/").map(Number);
+      let date = new Date(y, m - 1, d);
       let today = new Date();
-
-      if(date > today){
-        setError(id, "Cannot be future date");
-        return false;
-      }
-
-      if(today.getFullYear() - y > 120){
-        setError(id, "Must be under 120 years old");
-        return false;
-      }
-
+      if (date > today) { setError(id, "Cannot be future date"); return false; }
+      if (today.getFullYear() - y > 120) { setError(id, "Must be under 120 years old"); return false; }
       clearError(id);
+      saveField(field.name);
       return true;
     }
 
-    function formatSSN(field){
-      let n = field.value.replace(/\D/g,"").slice(0,9);
-      if(n.length > 5) field.value = n.replace(/(\d{3})(\d{2})(\d+)/, "$1-$2-$3");
-      else if(n.length > 3) field.value = n.replace(/(\d{3})(\d+)/, "$1-$2");
+    function formatSSN(field) {
+      let n = field.value.replace(/\D/g, "").slice(0, 9);
+      if (n.length > 5) field.value = n.replace(/(\d{3})(\d{2})(\d+)/, "$1-$2-$3");
+      else if (n.length > 3) field.value = n.replace(/(\d{3})(\d+)/, "$1-$2");
       else field.value = n;
     }
 
-    function validateSSN(field, id){
-      if(!/^\d{3}-\d{2}-\d{4}$/.test(field.value)){
-        setError(id, "SSN must be XXX-XX-XXXX");
-        return false;
-      }
+    function validateSSN(field, id) {
+      if (!/^\d{3}-\d{2}-\d{4}$/.test(field.value)) { setError(id, "SSN must be XXX-XX-XXXX"); return false; }
       clearError(id);
       return true;
     }
 
-    function validateEmail(field, id){
+    function validateEmail(field, id) {
       field.value = field.value.toLowerCase();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value)){
-        setError(id, "Invalid email format");
-        return false;
-      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value)) { setError(id, "Invalid email format"); return false; }
       clearError(id);
+      saveField(field.name);
       return true;
     }
 
-    function validateZip(field, id){
-      if(!/^\d{5}$/.test(field.value)){
-        setError(id, "Zip must be 5 digits");
-        return false;
-      }
+    function validateZip(field, id) {
+      if (!/^\d{5}$/.test(field.value)) { setError(id, "Zip must be 5 digits"); return false; }
       clearError(id);
+      saveField(field.name);
       return true;
     }
 
-    function validateAll(){
+    function validateAll() {
       let f = document.forms["patientForm"];
       let errors = 0;
 
-      if(!validateName(f.fname,"fnameError")) errors++;
-      if(!validateMI(f.mi,"miError")) errors++;
-      if(!validateName(f.lname,"lnameError")) errors++;
-      if(!validateDOB(f.dob,"dobError")) errors++;
-      if(!validateSSN(f.ssn,"ssnError")) errors++;
-      if(!validateEmail(f.email,"emailError")) errors++;
-      if(!validateZip(f.zip,"zipError")) errors++;
+      if (!validateName(f.fname,  "fnameError")) errors++;
+      if (!validateMI(f.mi,       "miError"))    errors++;
+      if (!validateName(f.lname,  "lnameError")) errors++;
+      if (!validateDOB(f.dob,     "dobError"))   errors++;
+      if (!validateSSN(f.ssn,     "ssnError"))   errors++;
+      if (!validateEmail(f.email, "emailError")) errors++;
+      if (!validateZip(f.zip,     "zipError"))   errors++;
 
-      if(errors === 0){
+      if (errors === 0) {
         document.getElementById("realSubmit").style.display = "inline";
         alert("All fields valid. You may now submit.");
       } else {
         alert("Please fix all errors first.");
       }
     }
-
   </script>
 </head>
 
-<body onload="displayDate()">
+<body>
 
   <!-- HEADER -->
   <div id="header">
@@ -228,6 +512,18 @@
   <!-- MAIN -->
   <div id="main">
     <h2>New Patient Registration Form</h2>
+
+    <div id="welcomeBanner">Loading…</div>
+
+    <div class="iframe-section">
+      <h3>🏥 Clinic Contact &amp; Hours</h3>
+      <iframe
+        src="clinic_info.html"
+        title="Superstar Clinic Contact Information"
+        scrolling="auto">
+        Your browser does not support iFrames.
+      </iframe>
+    </div>
 
     <div class="form-container">
       <form name="patientForm" action="thankyou.html" onsubmit="return validateForm()">
@@ -283,71 +579,32 @@
 
           <tr>
             <td>Address Line 1:</td>
-            <td><input name="addr1" type="text" maxlength="30" required placeholder="123 Main St" /></td>
+            <td>
+              <input name="addr1" type="text" maxlength="30" required
+                placeholder="123 Main St"
+                onblur="saveField('addr1')" />
+            </td>
 
             <td>Address Line 2:</td>
-            <td><input name="addr2" type="text" maxlength="30" placeholder="Apt 4" /></td>
+            <td>
+              <input name="addr2" type="text" maxlength="30"
+                placeholder="Apt 4"
+                onblur="saveField('addr2')" />
+            </td>
           </tr>
 
           <tr>
             <td>City:</td>
-            <td><input name="city" type="text" maxlength="30" required placeholder="Houston" /></td>
+            <td>
+              <input name="city" type="text" maxlength="30" required
+                placeholder="Houston"
+                onblur="saveField('city')" />
+            </td>
 
             <td>State:</td>
             <td>
-              <select name="state" required>
-                <option value="">Select</option>
-                <option value="AL">Alabama</option>
-                <option value="AK">Alaska</option>
-                <option value="AZ">Arizona</option>
-                <option value="AR">Arkansas</option>
-                <option value="CA">California</option>
-                <option value="CO">Colorado</option>
-                <option value="CT">Connecticut</option>
-                <option value="DE">Delaware</option>
-                <option value="DC">District Of Columbia</option>
-                <option value="FL">Florida</option>
-                <option value="GA">Georgia</option>
-                <option value="HI">Hawaii</option>
-                <option value="ID">Idaho</option>
-                <option value="IL">Illinois</option>
-                <option value="IN">Indiana</option>
-                <option value="IA">Iowa</option>
-                <option value="KS">Kansas</option>
-                <option value="KY">Kentucky</option>
-                <option value="LA">Louisiana</option>
-                <option value="ME">Maine</option>
-                <option value="MD">Maryland</option>
-                <option value="MA">Massachusetts</option>
-                <option value="MI">Michigan</option>
-                <option value="MN">Minnesota</option>
-                <option value="MS">Mississippi</option>
-                <option value="MO">Missouri</option>
-                <option value="MT">Montana</option>
-                <option value="NE">Nebraska</option>
-                <option value="NV">Nevada</option>
-                <option value="NH">New Hampshire</option>
-                <option value="NJ">New Jersey</option>
-                <option value="NM">New Mexico</option>
-                <option value="NY">New York</option>
-                <option value="NC">North Carolina</option>
-                <option value="ND">North Dakota</option>
-                <option value="OH">Ohio</option>
-                <option value="OK">Oklahoma</option>
-                <option value="OR">Oregon</option>
-                <option value="PA">Pennsylvania</option>
-                <option value="RI">Rhode Island</option>
-                <option value="SC">South Carolina</option>
-                <option value="SD">South Dakota</option>
-                <option value="TN">Tennessee</option>
-                <option value="TX">Texas</option>
-                <option value="UT">Utah</option>
-                <option value="VT">Vermont</option>
-                <option value="VA">Virginia</option>
-                <option value="WA">Washington</option>
-                <option value="WV">West Virginia</option>
-                <option value="WI">Wisconsin</option>
-                <option value="WY">Wyoming</option>
+              <select name="state" required onchange="lsSave('state', this.value)">
+                <option value="">Loading states…</option>
               </select>
             </td>
 
@@ -372,12 +629,20 @@
             </td>
 
             <td>Phone Number:</td>
-            <td><input name="phone" type="text" placeholder="713-555-1212" /></td>
+            <td>
+              <input name="phone" type="text"
+                placeholder="713-555-1212"
+                onblur="saveField('phone')" />
+            </td>
           </tr>
 
           <tr>
             <td>User ID:</td>
-            <td><input name="userid" type="text" required placeholder="username123" /></td>
+            <td>
+              <input name="userid" type="text" required
+                placeholder="username123"
+                onblur="saveField('userid')" />
+            </td>
           </tr>
 
           <tr>
@@ -391,58 +656,68 @@
           <tr>
             <td>Describe Current Symptoms:</td>
             <td colspan="5">
-              <textarea rows="3" cols="50"></textarea>
+              <textarea name="symptoms" rows="3" cols="50"
+                onblur="saveField('symptoms')"></textarea>
             </td>
           </tr>
 
           <tr>
             <td>Medical Conditions:</td>
-            <td colspan="5">
-              <input type="checkbox" name="cond1"> Diabetes
-              <input type="checkbox" name="cond2"> Hypertension
-              <input type="checkbox" name="cond3"> Asthma
-              <input type="checkbox" name="cond4"> Heart Disease
-              <input type="checkbox" name="cond5"> Allergies
+            <td colspan="5" id="conditionsContainer">
+              Loading conditions…
             </td>
           </tr>
 
           <tr>
             <td>Gender:</td>
             <td colspan="5">
-              <input type="radio" name="gender" value="Male"> Male
-              <input type="radio" name="gender" value="Female"> Female
-              <input type="radio" name="gender" value="Other"> Other
+              <input type="radio" name="gender" value="Male"   onchange="saveRadio('gender')"> Male
+              <input type="radio" name="gender" value="Female" onchange="saveRadio('gender')"> Female
+              <input type="radio" name="gender" value="Other"  onchange="saveRadio('gender')"> Other
             </td>
           </tr>
 
           <tr>
             <td>Vaccinated:</td>
             <td colspan="5">
-              <input type="radio" name="vaccinated" value="Yes"> Yes
-              <input type="radio" name="vaccinated" value="No"> No
+              <input type="radio" name="vaccinated" value="Yes" onchange="saveRadio('vaccinated')"> Yes
+              <input type="radio" name="vaccinated" value="No"  onchange="saveRadio('vaccinated')"> No
             </td>
           </tr>
 
           <tr>
             <td>Do You Have Insurance?</td>
             <td colspan="5">
-              <input type="radio" name="insurance" value="Yes"> Yes
-              <input type="radio" name="insurance" value="No"> No
+              <input type="radio" name="insurance" value="Yes" onchange="saveRadio('insurance')"> Yes
+              <input type="radio" name="insurance" value="No"  onchange="saveRadio('insurance')"> No
             </td>
           </tr>
 
           <tr>
             <td>Health Scale (1-10):</td>
             <td colspan="5">
-              <input type="range" min="1" max="10" oninput="updateSlider(this.value)" />
+              <input type="range" min="1" max="10" value="5"
+                oninput="updateSlider(this.value)" />
               <span id="sliderValue">5</span>
+            </td>
+          </tr>
+
+          <tr class="remember-row">
+            <td colspan="6" style="text-align:left; padding-left:10px;">
+              <label style="font-weight:bold; cursor:pointer;">
+                <input type="checkbox" id="rememberMe" checked
+                  style="width:auto; margin-right:8px;"
+                  onchange="handleRememberMe()">
+                Remember Me (saves your information for your next visit — expires in 48 hours)
+              </label>
             </td>
           </tr>
 
           <tr>
             <td colspan="6" style="text-align:center;">
               <input type="button" value="VALIDATE" onclick="validateAll()" />
-              <input type="submit" id="realSubmit" value="Submit" />
+              <input type="submit" id="realSubmit" value="Submit"
+                style="display:none;" />
             </td>
           </tr>
 
@@ -457,8 +732,7 @@
   <!-- FOOTER -->
   <div id="footer">
     <p><strong>Superstar Clinic</strong></p>
-    <p>PO Box 7392</p>
-    <p>Houston, Texas 77009</p>
+    <p>PO Box 7392 · Houston, Texas 77009</p>
     <button onclick="alert('Please call us at 832-791-0124')">Contact Us</button>
   </div>
 
